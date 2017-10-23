@@ -1,0 +1,129 @@
+---
+title: "PA1_template"
+author: "Jose Alberto"
+date: "22 de octubre de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##Code for reading data
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+datos<-read.csv("C:\\Users\\juanc\\Desktop\\activity.csv")
+```
+
+##Transforming data type of dates as Date
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+fecha<-as.character(datos$date)
+datos$date<-as.Date(fecha)
+```
+
+##Sum of steps per day 
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+steps<- aggregate(datos$steps ~ datos$date, datos, sum)
+```
+
+##Change column names
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+names(steps) <- c("fecha", "pasos")
+```
+
+##Histogram of steps per day (on average)
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+hist(steps$pasos, main = paste("Total Steps Each Day"), col="purple", xlab="Number of Steps")
+```
+
+##Mean and Median of steps per day
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+rmean <- mean(steps$pasos) 
+rmedian <- median(steps$pasos)
+```
+
+##Mean of steps per interval
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+steps2<- aggregate(datos$steps ~ datos$interval, datos,mean)
+names(steps2) <- c("intervalo", "pasos")
+```
+
+##Time series of number of steps on average per interval
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+plot(steps2$intervalo,steps2$pasos,main="Average number of steps each interval", type="l", col="blue")
+```
+
+##Interval which contains the max number of steps on average per interval
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+steps2[which.max(steps2$pasos),1]
+max(steps2$pasos)
+maximo <- subset(steps2, pasos>=max(steps2$pasos), select = intervalo)
+maximo
+```
+
+##Counting NA values in steps field
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+nulos <- is.na(datos$steps)
+sum(nulos)
+```
+##We create a new data frame which will not contains NA values in steps field
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+copia <- datos
+```
+##Replacing NA values by mean of steps in corresponding both interval and day
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+copia$steps<- ifelse(is.na(copia$steps),steps2$pasos[match(copia$interval,steps2$intervalo)],copia$steps)
+```
+##Verify that our new data frame doesn´t contain NA values
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+nulos2 <- is.na(copia$steps)
+sum(nulos2)
+```
+##Transforming data type of dates as Date in new data frame
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+fecha2<-as.character(copia$date)
+copia$date<-as.Date(fecha2)
+steps3<- aggregate(copia$steps ~ copia$date, copia, sum)
+names(steps3) <- c("fecha", "pasos")
+```
+##Histogram of steps per day (on average) in new data frame
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+hist(steps3$pasos, main = paste("Total Steps Each Day"), col="green", xlab="Number of Steps")
+```
+##Finding day name for each date
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+fechas<- as.Date(copia$date)
+dias<-weekdays(fechas)
+dias<-ifelse(grepl("Sabado", dias), "Fin de Semana", dias)
+dias<-ifelse(grepl("Domingo", dias), "Fin de Semana", dias)
+dias<-ifelse(grepl("Lunes", dias), "Entre semana", dias)
+dias<-ifelse(grepl("Martes", dias), "Entre semana", dias)
+dias<-ifelse(grepl("Miercoles", dias), "Entre semana", dias)
+dias<-ifelse(grepl("Jueves", dias), "Entre semana", dias)
+dias<-ifelse(grepl("Viernes", dias), "Entre semana", dias)
+dias<- as.factor(dias)
+```
+
+##Adding day names in data frame which doesn't contain NA values
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+copia<-cbind(copia,dias)
+```
+
+##Importing libraries needed to plot following graphs
+```{r}
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+```
+
+##New data frame with day names
+```{r fig.height=4.5,fig.width=4.5, fig.align='center'}
+porTipoDeDia <- copia %>% group_by(interval, dias) %>% summarise(steps = mean(steps))
+```
+
+
+##Plotting graphs of number of steps (on average) for each day of the week
+```{r, fig.align='center'}
+dev.off()
+ggplot(porTipoDeDia, aes(x=interval, y=steps, color = dias)) + geom_line() + facet_wrap(~dias, nrow=7, ncol=1)
+```
